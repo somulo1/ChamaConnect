@@ -1,15 +1,19 @@
-import {
-  User, InsertUser, Wallet, InsertWallet,
-  Chama, InsertChama, ChamaMember, InsertChamaMember,
-  Contribution, InsertContribution, Transaction, InsertTransaction,
-  Meeting, InsertMeeting, Message, InsertMessage,
-  ChamaRule, InsertChamaRule, Notification, InsertNotification,
-  Product, InsertProduct, LearningProgress, InsertLearningProgress
-} from "@shared/schema";
-import session from "express-session";
-import createMemoryStore from "memorystore";
-
-const MemoryStore = createMemoryStore(session);
+import { db } from './db';
+import session from 'express-session';
+import connectPg from 'connect-pg-simple';
+import { pool } from './db';
+import { 
+  users, wallets, chamas, chamaMembers, contributions, 
+  transactions, meetings, messages, chamaRules,
+  notifications, products, learningProgress,
+  type User, type InsertUser, type Wallet, type InsertWallet,
+  type Chama, type InsertChama, type ChamaMember, type InsertChamaMember,
+  type Contribution, type InsertContribution, type Transaction, type InsertTransaction,
+  type Meeting, type InsertMeeting, type Message, type InsertMessage,
+  type ChamaRule, type InsertChamaRule, type Notification, type InsertNotification,
+  type Product, type InsertProduct, type LearningProgress
+} from '@shared/schema';
+import { eq, and, desc } from 'drizzle-orm';
 
 export interface IStorage {
   // Session store
@@ -80,373 +84,393 @@ export interface IStorage {
   updateLearningProgress(userId: number, moduleId: string, progress: number, completed: boolean): Promise<LearningProgress>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<number, User>;
-  private wallets: Map<number, Wallet>;
-  private chamas: Map<number, Chama>;
-  private chamaMembers: Map<number, ChamaMember>;
-  private contributions: Map<number, Contribution>;
-  private transactions: Map<number, Transaction>;
-  private meetings: Map<number, Meeting>;
-  private messages: Map<number, Message>;
-  private chamaRules: Map<number, ChamaRule>;
-  private notifications: Map<number, Notification>;
-  private products: Map<number, Product>;
-  private learningProgress: Map<number, LearningProgress>;
-  
+// Database storage implementation
+export class DatabaseStorage implements IStorage {
   sessionStore: session.Store;
-  currentId: { [key: string]: number };
-
+  
   constructor() {
-    this.users = new Map();
-    this.wallets = new Map();
-    this.chamas = new Map();
-    this.chamaMembers = new Map();
-    this.contributions = new Map();
-    this.transactions = new Map();
-    this.meetings = new Map();
-    this.messages = new Map();
-    this.chamaRules = new Map();
-    this.notifications = new Map();
-    this.products = new Map();
-    this.learningProgress = new Map();
-    
-    this.currentId = {
-      users: 1,
-      wallets: 1,
-      chamas: 1,
-      chamaMembers: 1,
-      contributions: 1,
-      transactions: 1,
-      meetings: 1,
-      messages: 1,
-      chamaRules: 1,
-      notifications: 1,
-      products: 1,
-      learningProgress: 1
-    };
-    
-    this.sessionStore = new MemoryStore({
-      checkPeriod: 86400000 // 24 hours
-    });
+    const PostgresSessionStore = connectPg(session);
+    this.sessionStore = new PostgresSessionStore({ pool, createTableIfMissing: true });
   }
 
   // User operations
   async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username
-    );
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user;
   }
-
+  
   async getUserByEmail(email: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.email === email
-    );
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user;
   }
 
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const id = this.currentId.users++;
-    const user: User = { ...insertUser, id, createdAt: new Date() };
-    this.users.set(id, user);
+  async createUser(userData: InsertUser): Promise<User> {
+    const [user] = await db.insert(users).values(userData).returning();
     return user;
   }
 
   async updateUser(id: number, userData: Partial<User>): Promise<User | undefined> {
-    const user = this.users.get(id);
-    if (!user) return undefined;
-    
-    const updatedUser = { ...user, ...userData };
-    this.users.set(id, updatedUser);
-    return updatedUser;
+    const [user] = await db
+      .update(users)
+      .set(userData)
+      .where(eq(users.id, id))
+      .returning();
+    return user;
   }
 
   // Wallet operations
   async getWallet(userId: number): Promise<Wallet | undefined> {
-    return Array.from(this.wallets.values()).find(
-      (wallet) => wallet.userId === userId
-    );
+    const [wallet] = await db.select().from(wallets).where(eq(wallets.userId, userId));
+    return wallet;
   }
 
-  async createWallet(wallet: InsertWallet): Promise<Wallet> {
-    const id = this.currentId.wallets++;
-    const newWallet: Wallet = { ...wallet, id };
-    this.wallets.set(id, newWallet);
-    return newWallet;
+  async createWallet(walletData: InsertWallet): Promise<Wallet> {
+    const [wallet] = await db.insert(wallets).values(walletData).returning();
+    return wallet;
   }
 
   async updateWalletBalance(userId: number, amount: number): Promise<Wallet | undefined> {
     const wallet = await this.getWallet(userId);
     if (!wallet) return undefined;
     
-    const balance = parseFloat(wallet.balance.toString()) + amount;
-    const updatedWallet = { ...wallet, balance: balance.toString() };
-    this.wallets.set(wallet.id, updatedWallet);
+    const currentBalance = parseFloat(wallet.balance);
+    const newBalance = (currentBalance + amount).toFixed(2);
+    
+    const [updatedWallet] = await db
+      .update(wallets)
+      .set({ balance: newBalance })
+      .where(eq(wallets.userId, userId))
+      .returning();
+    
     return updatedWallet;
   }
 
   // Chama operations
   async getChama(id: number): Promise<Chama | undefined> {
-    return this.chamas.get(id);
+    const [chama] = await db.select().from(chamas).where(eq(chamas.id, id));
+    return chama;
   }
 
   async getChamasByUser(userId: number): Promise<Chama[]> {
-    const memberRecords = Array.from(this.chamaMembers.values())
-      .filter(member => member.userId === userId);
+    // Get all chamas where the user is a member
+    const chamaMemberships = await db
+      .select()
+      .from(chamaMembers)
+      .where(eq(chamaMembers.userId, userId));
     
-    return memberRecords.map(member => 
-      this.chamas.get(member.chamaId)
-    ).filter((chama): chama is Chama => chama !== undefined);
+    // Get the details of each chama
+    const chamaIds = chamaMemberships.map(membership => membership.chamaId);
+    if (chamaIds.length === 0) return [];
+    
+    return await db
+      .select()
+      .from(chamas)
+      .where(
+        chamaIds.map(id => eq(chamas.id, id)).reduce((prev, curr) => prev || curr)
+      );
   }
 
-  async createChama(chama: InsertChama): Promise<Chama> {
-    const id = this.currentId.chamas++;
-    const newChama: Chama = { ...chama, id, founded: new Date() };
-    this.chamas.set(id, newChama);
-    return newChama;
+  async createChama(chamaData: InsertChama): Promise<Chama> {
+    const [chama] = await db.insert(chamas).values(chamaData).returning();
+    return chama;
   }
 
   // Chama member operations
   async getChamaMembers(chamaId: number): Promise<(ChamaMember & { user: User })[]> {
-    const members = Array.from(this.chamaMembers.values())
-      .filter(member => member.chamaId === chamaId);
+    const members = await db
+      .select()
+      .from(chamaMembers)
+      .where(eq(chamaMembers.chamaId, chamaId));
     
-    return members.map(member => {
-      const user = this.users.get(member.userId);
-      if (!user) throw new Error(`User not found for member ${member.id}`);
-      return { ...member, user };
-    });
+    const membersWithUserDetails = [];
+    
+    for (const member of members) {
+      const user = await this.getUser(member.userId);
+      if (user) {
+        membersWithUserDetails.push({
+          ...member,
+          user
+        });
+      }
+    }
+    
+    return membersWithUserDetails;
   }
 
   async getChamaMember(chamaId: number, userId: number): Promise<ChamaMember | undefined> {
-    return Array.from(this.chamaMembers.values()).find(
-      member => member.chamaId === chamaId && member.userId === userId
-    );
+    const [member] = await db
+      .select()
+      .from(chamaMembers)
+      .where(
+        and(
+          eq(chamaMembers.chamaId, chamaId),
+          eq(chamaMembers.userId, userId)
+        )
+      );
+    
+    return member;
   }
 
-  async addChamaMember(member: InsertChamaMember): Promise<ChamaMember> {
-    const id = this.currentId.chamaMembers++;
-    const newMember: ChamaMember = { ...member, id, joinedAt: new Date() };
-    this.chamaMembers.set(id, newMember);
-    return newMember;
+  async addChamaMember(memberData: InsertChamaMember): Promise<ChamaMember> {
+    const [member] = await db.insert(chamaMembers).values(memberData).returning();
+    return member;
   }
 
   async updateChamaMemberRole(chamaId: number, userId: number, role: string): Promise<ChamaMember | undefined> {
-    const member = await this.getChamaMember(chamaId, userId);
-    if (!member) return undefined;
+    const [member] = await db
+      .update(chamaMembers)
+      .set({ role })
+      .where(
+        and(
+          eq(chamaMembers.chamaId, chamaId),
+          eq(chamaMembers.userId, userId)
+        )
+      )
+      .returning();
     
-    const updatedMember = { ...member, role };
-    this.chamaMembers.set(member.id, updatedMember);
-    return updatedMember;
+    return member;
   }
 
   // Contribution operations
   async getContributions(chamaId: number): Promise<Contribution[]> {
-    return Array.from(this.contributions.values())
-      .filter(contribution => contribution.chamaId === chamaId);
+    return await db
+      .select()
+      .from(contributions)
+      .where(eq(contributions.chamaId, chamaId))
+      .orderBy(desc(contributions.dueDate));
   }
 
   async getUserContributions(userId: number): Promise<Contribution[]> {
-    return Array.from(this.contributions.values())
-      .filter(contribution => contribution.userId === userId);
+    return await db
+      .select()
+      .from(contributions)
+      .where(eq(contributions.userId, userId))
+      .orderBy(desc(contributions.dueDate));
   }
 
-  async createContribution(contribution: InsertContribution): Promise<Contribution> {
-    const id = this.currentId.contributions++;
-    const newContribution: Contribution = { ...contribution, id, paidAt: undefined };
-    this.contributions.set(id, newContribution);
-    return newContribution;
+  async createContribution(contributionData: InsertContribution): Promise<Contribution> {
+    const [contribution] = await db.insert(contributions).values(contributionData).returning();
+    return contribution;
   }
 
   async updateContributionStatus(id: number, status: string, paidAt?: Date): Promise<Contribution | undefined> {
-    const contribution = this.contributions.get(id);
-    if (!contribution) return undefined;
+    const [contribution] = await db
+      .update(contributions)
+      .set({ status, paidAt: paidAt ?? null })
+      .where(eq(contributions.id, id))
+      .returning();
     
-    const updatedContribution = { ...contribution, status, paidAt };
-    this.contributions.set(id, updatedContribution);
-    return updatedContribution;
+    return contribution;
   }
 
   // Transaction operations
   async getUserTransactions(userId: number): Promise<Transaction[]> {
-    return Array.from(this.transactions.values())
-      .filter(transaction => transaction.userId === userId)
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    return await db
+      .select()
+      .from(transactions)
+      .where(eq(transactions.userId, userId))
+      .orderBy(desc(transactions.createdAt));
   }
 
-  async createTransaction(transaction: InsertTransaction): Promise<Transaction> {
-    const id = this.currentId.transactions++;
-    const newTransaction: Transaction = { ...transaction, id, createdAt: new Date() };
-    this.transactions.set(id, newTransaction);
-    return newTransaction;
+  async createTransaction(transactionData: InsertTransaction): Promise<Transaction> {
+    const [transaction] = await db.insert(transactions).values(transactionData).returning();
+    return transaction;
   }
 
   // Meeting operations
   async getChamaMeetings(chamaId: number): Promise<Meeting[]> {
-    return Array.from(this.meetings.values())
-      .filter(meeting => meeting.chamaId === chamaId)
-      .sort((a, b) => b.scheduledFor.getTime() - a.scheduledFor.getTime());
+    return await db
+      .select()
+      .from(meetings)
+      .where(eq(meetings.chamaId, chamaId))
+      .orderBy(desc(meetings.scheduledFor));
   }
 
-  async createMeeting(meeting: InsertMeeting): Promise<Meeting> {
-    const id = this.currentId.meetings++;
-    const newMeeting: Meeting = { ...meeting, id };
-    this.meetings.set(id, newMeeting);
-    return newMeeting;
+  async createMeeting(meetingData: InsertMeeting): Promise<Meeting> {
+    const [meeting] = await db.insert(meetings).values(meetingData).returning();
+    return meeting;
   }
 
   // Message operations
   async getUserMessages(userId: number): Promise<Message[]> {
-    return Array.from(this.messages.values())
-      .filter(message => 
-        message.senderId === userId || 
-        message.recipientId === userId
-      )
-      .sort((a, b) => b.sentAt.getTime() - a.sentAt.getTime());
+    return await db
+      .select()
+      .from(messages)
+      .where(eq(messages.recipientId, userId))
+      .orderBy(desc(messages.sentAt));
   }
 
   async getChamaMessages(chamaId: number): Promise<Message[]> {
-    return Array.from(this.messages.values())
-      .filter(message => message.chamaId === chamaId)
-      .sort((a, b) => b.sentAt.getTime() - a.sentAt.getTime());
+    return await db
+      .select()
+      .from(messages)
+      .where(eq(messages.chamaId, chamaId))
+      .orderBy(desc(messages.sentAt));
   }
 
-  async createMessage(message: InsertMessage): Promise<Message> {
-    const id = this.currentId.messages++;
-    const newMessage: Message = { ...message, id, sentAt: new Date(), read: false };
-    this.messages.set(id, newMessage);
-    return newMessage;
+  async createMessage(messageData: InsertMessage): Promise<Message> {
+    const [message] = await db.insert(messages).values(messageData).returning();
+    return message;
   }
 
   async markMessageAsRead(id: number): Promise<Message | undefined> {
-    const message = this.messages.get(id);
-    if (!message) return undefined;
+    const [message] = await db
+      .update(messages)
+      .set({ read: true })
+      .where(eq(messages.id, id))
+      .returning();
     
-    const updatedMessage = { ...message, read: true };
-    this.messages.set(id, updatedMessage);
-    return updatedMessage;
+    return message;
   }
 
   // Chama rule operations
   async getChamaRules(chamaId: number): Promise<ChamaRule | undefined> {
-    return Array.from(this.chamaRules.values())
-      .find(rule => rule.chamaId === chamaId);
+    const [rules] = await db
+      .select()
+      .from(chamaRules)
+      .where(eq(chamaRules.chamaId, chamaId));
+    
+    return rules;
   }
 
-  async createChamaRules(rules: InsertChamaRule): Promise<ChamaRule> {
-    const id = this.currentId.chamaRules++;
-    const now = new Date();
-    const newRules: ChamaRule = { ...rules, id, createdAt: now, updatedAt: now };
-    this.chamaRules.set(id, newRules);
-    return newRules;
+  async createChamaRules(rulesData: InsertChamaRule): Promise<ChamaRule> {
+    const [rules] = await db.insert(chamaRules).values(rulesData).returning();
+    return rules;
   }
 
   async updateChamaRules(chamaId: number, rulesData: Partial<ChamaRule>): Promise<ChamaRule | undefined> {
-    const rules = await this.getChamaRules(chamaId);
-    if (!rules) return undefined;
+    const [rules] = await db
+      .update(chamaRules)
+      .set({ ...rulesData, updatedAt: new Date() })
+      .where(eq(chamaRules.chamaId, chamaId))
+      .returning();
     
-    const updatedRules = { ...rules, ...rulesData, updatedAt: new Date() };
-    this.chamaRules.set(rules.id, updatedRules);
-    return updatedRules;
+    return rules;
   }
 
   // Notification operations
   async getUserNotifications(userId: number): Promise<Notification[]> {
-    return Array.from(this.notifications.values())
-      .filter(notification => notification.userId === userId)
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    return await db
+      .select()
+      .from(notifications)
+      .where(eq(notifications.userId, userId))
+      .orderBy(desc(notifications.createdAt));
   }
 
-  async createNotification(notification: InsertNotification): Promise<Notification> {
-    const id = this.currentId.notifications++;
-    const newNotification: Notification = { 
-      ...notification, 
-      id, 
-      createdAt: new Date(), 
-      read: false 
-    };
-    this.notifications.set(id, newNotification);
-    return newNotification;
+  async createNotification(notificationData: InsertNotification): Promise<Notification> {
+    const [notification] = await db.insert(notifications).values(notificationData).returning();
+    return notification;
   }
 
   async markNotificationAsRead(id: number): Promise<Notification | undefined> {
-    const notification = this.notifications.get(id);
-    if (!notification) return undefined;
+    const [notification] = await db
+      .update(notifications)
+      .set({ read: true })
+      .where(eq(notifications.id, id))
+      .returning();
     
-    const updatedNotification = { ...notification, read: true };
-    this.notifications.set(id, updatedNotification);
-    return updatedNotification;
+    return notification;
   }
 
   // Product operations
   async getProducts(): Promise<Product[]> {
-    return Array.from(this.products.values())
-      .filter(product => product.status === "available")
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    return await db
+      .select()
+      .from(products)
+      .orderBy(desc(products.createdAt));
   }
 
   async getUserProducts(userId: number): Promise<Product[]> {
-    return Array.from(this.products.values())
-      .filter(product => product.sellerId === userId)
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    return await db
+      .select()
+      .from(products)
+      .where(eq(products.sellerId, userId))
+      .orderBy(desc(products.createdAt));
   }
 
   async getProduct(id: number): Promise<Product | undefined> {
-    return this.products.get(id);
+    const [product] = await db
+      .select()
+      .from(products)
+      .where(eq(products.id, id));
+    
+    return product;
   }
 
-  async createProduct(product: InsertProduct): Promise<Product> {
-    const id = this.currentId.products++;
-    const newProduct: Product = { ...product, id, createdAt: new Date() };
-    this.products.set(id, newProduct);
-    return newProduct;
+  async createProduct(productData: InsertProduct): Promise<Product> {
+    const [product] = await db.insert(products).values(productData).returning();
+    return product;
   }
 
   async updateProductStatus(id: number, status: string): Promise<Product | undefined> {
-    const product = this.products.get(id);
-    if (!product) return undefined;
+    const [product] = await db
+      .update(products)
+      .set({ status })
+      .where(eq(products.id, id))
+      .returning();
     
-    const updatedProduct = { ...product, status };
-    this.products.set(id, updatedProduct);
-    return updatedProduct;
+    return product;
   }
 
   // Learning progress operations
   async getUserLearningProgress(userId: number): Promise<LearningProgress[]> {
-    return Array.from(this.learningProgress.values())
-      .filter(progress => progress.userId === userId);
+    return await db
+      .select()
+      .from(learningProgress)
+      .where(eq(learningProgress.userId, userId));
   }
 
   async updateLearningProgress(userId: number, moduleId: string, progress: number, completed: boolean): Promise<LearningProgress> {
-    const existingProgress = Array.from(this.learningProgress.values())
-      .find(p => p.userId === userId && p.moduleId === moduleId);
+    // Check if progress already exists
+    const existingProgress = await db
+      .select()
+      .from(learningProgress)
+      .where(
+        and(
+          eq(learningProgress.userId, userId),
+          eq(learningProgress.moduleId, moduleId)
+        )
+      );
     
-    if (existingProgress) {
-      const updatedProgress = { 
-        ...existingProgress, 
-        progress, 
-        completed, 
-        lastAccessed: new Date() 
-      };
-      this.learningProgress.set(existingProgress.id, updatedProgress);
+    if (existingProgress.length > 0) {
+      // Update existing progress
+      const [updatedProgress] = await db
+        .update(learningProgress)
+        .set({
+          progress,
+          completed,
+          lastAccessed: new Date()
+        })
+        .where(
+          and(
+            eq(learningProgress.userId, userId),
+            eq(learningProgress.moduleId, moduleId)
+          )
+        )
+        .returning();
+      
       return updatedProgress;
     } else {
-      const id = this.currentId.learningProgress++;
-      const newProgress: LearningProgress = {
-        id,
-        userId,
-        moduleId,
-        progress,
-        completed,
-        lastAccessed: new Date()
-      };
-      this.learningProgress.set(id, newProgress);
+      // Create new progress entry
+      const [newProgress] = await db
+        .insert(learningProgress)
+        .values({
+          userId,
+          moduleId,
+          progress,
+          completed,
+          lastAccessed: new Date()
+        })
+        .returning();
+      
       return newProgress;
     }
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
