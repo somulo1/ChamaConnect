@@ -28,6 +28,10 @@ import AdminUsers from "@/pages/admin/Users";
 import AdminChamas from "@/pages/admin/Chamas";
 import AdminReports from "@/pages/admin/Reports";
 import AdminTransactions from "@/pages/admin/Transactions";
+import AdminAIConsole from "@/pages/admin/AIConsole";
+import AdminBackup from "@/pages/admin/Backup";
+import AdminSecurity from "@/pages/admin/Security";
+import AdminSettings from "@/pages/admin/Settings";
 import ApiSettings from "@/pages/admin/ApiSettings";
 
 function App() {
@@ -62,6 +66,10 @@ function App() {
         <Route path="/admin/chamas" component={AdminChamas} />
         <Route path="/admin/reports" component={AdminReports} />
         <Route path="/admin/transactions" component={AdminTransactions} />
+        <Route path="/admin/ai-console" component={AdminAIConsole} />
+        <Route path="/admin/backup" component={AdminBackup} />
+        <Route path="/admin/security" component={AdminSecurity} />
+        <Route path="/admin/settings" component={AdminSettings} />
         <Route path="/admin/api-settings" component={ApiSettings} />
         
         {/* Not Found */}
