@@ -5,18 +5,52 @@ import NotFound from "@/pages/not-found";
 import AuthPage from "@/pages/auth-page";
 import LandingPage from "@/pages/landing-page";
 
+// User Dashboard Pages
+import UserDashboard from "@/pages/user/Dashboard";
+import UserWallet from "@/pages/user/Wallet";
+import UserLearning from "@/pages/user/Learning";
+import UserMarketplace from "@/pages/user/Marketplace";
+import UserChat from "@/pages/user/Chat";
+import UserAssistant from "@/pages/user/Assistant";
+import UserSettings from "@/pages/user/Settings";
+
+// Chama Dashboard Pages
+import ChamaDashboard from "@/pages/chama/Dashboard";
+import ChamaMembers from "@/pages/chama/Members";
+import ChamaContributions from "@/pages/chama/Contributions";
+
+// Admin Dashboard Pages
+import AdminDashboard from "@/pages/admin/Dashboard";
+import ApiSettings from "@/pages/admin/ApiSettings";
+
 function App() {
   return (
     <TooltipProvider>
       <Toaster />
       <Switch>
-        {/* Landing Page - Public */}
+        {/* Public Routes */}
         <Route path="/" component={LandingPage} />
-        
-        {/* Auth Page - Login/Register */}
         <Route path="/auth" component={AuthPage} />
         
-        {/* Not Found Page */}
+        {/* User Routes */}
+        <Route path="/dashboard" component={UserDashboard} />
+        <Route path="/wallet" component={UserWallet} />
+        <Route path="/learning" component={UserLearning} />
+        <Route path="/marketplace" component={UserMarketplace} />
+        <Route path="/chat" component={UserChat} />
+        <Route path="/assistant" component={UserAssistant} />
+        <Route path="/settings" component={UserSettings} />
+        
+        {/* Chama Routes */}
+        <Route path="/chama/:id" component={ChamaDashboard} />
+        <Route path="/chama/:id/members" component={ChamaMembers} />
+        <Route path="/chama/:id/contributions" component={ChamaContributions} />
+        
+        {/* Admin Routes */}
+        <Route path="/admin" component={AdminDashboard} />
+        <Route path="/admin/api-settings" component={ApiSettings} />
+        
+        {/* Not Found */}
         <Route component={NotFound} />
       </Switch>
     </TooltipProvider>
