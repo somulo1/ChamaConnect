@@ -82,6 +82,13 @@ export interface IStorage {
   // Learning progress operations
   getUserLearningProgress(userId: number): Promise<LearningProgress[]>;
   updateLearningProgress(userId: number, moduleId: string, progress: number, completed: boolean): Promise<LearningProgress>;
+  
+  // API Key operations
+  getApiKeys(): Promise<ApiKey[]>;
+  getApiKeyByType(type: string): Promise<ApiKey | undefined>;
+  createApiKey(apiKey: InsertApiKey): Promise<ApiKey>;
+  updateApiKey(id: number, apiKey: Partial<ApiKey>): Promise<ApiKey | undefined>;
+  deleteApiKey(id: number): Promise<boolean>;
 }
 
 // Database storage implementation
@@ -470,6 +477,76 @@ export class DatabaseStorage implements IStorage {
       
       return newProgress;
     }
+  }
+  
+  // API Key operations
+  async getApiKeys(): Promise<ApiKey[]> {
+    return await db
+      .select()
+      .from(apiKeys)
+      .orderBy(apiKeys.name);
+  }
+  
+  async getApiKeyByType(type: string): Promise<ApiKey | undefined> {
+    const [apiKey] = await db
+      .select()
+      .from(apiKeys)
+      .where(
+        and(
+          eq(apiKeys.type, type),
+          eq(apiKeys.isActive, true)
+        )
+      );
+    
+    return apiKey;
+  }
+  
+  async createApiKey(apiKeyData: InsertApiKey): Promise<ApiKey> {
+    // Check if a key with this type already exists
+    const existingKeys = await db
+      .select()
+      .from(apiKeys)
+      .where(eq(apiKeys.type, apiKeyData.type));
+    
+    if (existingKeys.length > 0) {
+      // Update the existing key instead of creating a new one
+      const [updatedKey] = await db
+        .update(apiKeys)
+        .set({
+          key: apiKeyData.key,
+          name: apiKeyData.name,
+          isActive: apiKeyData.isActive ?? true,
+          lastUsedAt: new Date()
+        })
+        .where(eq(apiKeys.id, existingKeys[0].id))
+        .returning();
+      
+      return updatedKey;
+    }
+    
+    const [apiKey] = await db.insert(apiKeys).values(apiKeyData).returning();
+    return apiKey;
+  }
+  
+  async updateApiKey(id: number, apiKeyData: Partial<ApiKey>): Promise<ApiKey | undefined> {
+    const [apiKey] = await db
+      .update(apiKeys)
+      .set({
+        ...apiKeyData,
+        lastUsedAt: new Date()
+      })
+      .where(eq(apiKeys.id, id))
+      .returning();
+    
+    return apiKey;
+  }
+  
+  async deleteApiKey(id: number): Promise<boolean> {
+    const result = await db
+      .delete(apiKeys)
+      .where(eq(apiKeys.id, id));
+    
+    return !!result;
   }
 }
 

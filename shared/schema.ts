@@ -136,6 +136,17 @@ export const learningProgress = pgTable("learning_progress", {
   lastAccessed: timestamp("last_accessed").defaultNow(),
 });
 
+// API Keys
+export const apiKeys = pgTable("api_keys", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  key: text("key").notNull(),
+  type: text("type").notNull(), // sendgrid, twilio, payment, etc.
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  lastUsedAt: timestamp("last_used_at"),
+});
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
 export const insertWalletSchema = createInsertSchema(wallets).omit({ id: true });
@@ -149,6 +160,7 @@ export const insertChamaRuleSchema = createInsertSchema(chamaRules).omit({ id: t
 export const insertNotificationSchema = createInsertSchema(notifications).omit({ id: true, createdAt: true, read: true });
 export const insertProductSchema = createInsertSchema(products).omit({ id: true, createdAt: true });
 export const insertLearningProgressSchema = createInsertSchema(learningProgress).omit({ id: true, lastAccessed: true });
+export const insertApiKeySchema = createInsertSchema(apiKeys).omit({ id: true, createdAt: true, lastUsedAt: true });
 
 // Export types
 export type User = typeof users.$inferSelect;
@@ -186,3 +198,6 @@ export type InsertProduct = z.infer<typeof insertProductSchema>;
 
 export type LearningProgress = typeof learningProgress.$inferSelect;
 export type InsertLearningProgress = z.infer<typeof insertLearningProgressSchema>;
+
+export type ApiKey = typeof apiKeys.$inferSelect;
+export type InsertApiKey = z.infer<typeof insertApiKeySchema>;
