@@ -1,12 +1,14 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { db } from "./db";
 import { setupAuth } from "./auth";
 import { setupWebSocketServer } from "./websocket";
 import { insertChamaSchema, insertChamaMemberSchema, 
          insertContributionSchema, insertTransactionSchema,
          insertMeetingSchema, insertChamaRuleSchema,
-         insertProductSchema } from "@shared/schema";
+         insertProductSchema, insertApiKeySchema,
+         users, chamas, apiKeys } from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -551,14 +553,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ADMIN ROUTES
   app.get("/api/admin/users", requireAuth, verifyAppAdmin, async (req, res) => {
     try {
-      // In a real app, we'd paginate this
-      const users = Array.from(storage.users).map(([_, user]) => {
-        // Remove password from response
+      // In a real app, we'd use pagination
+      // For now, we'll query all users from the DB but remove the password
+      const allUsers = await db.select().from(users);
+      
+      // Remove password field from each user
+      const usersWithoutPassword = allUsers.map(user => {
         const { password, ...userWithoutPassword } = user;
         return userWithoutPassword;
       });
       
-      res.json(users);
+      res.json(usersWithoutPassword);
     } catch (error) {
       res.status(500).json({ message: "Server error" });
     }
@@ -566,11 +571,95 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/admin/chamas", requireAuth, verifyAppAdmin, async (req, res) => {
     try {
-      // In a real app, we'd paginate this
-      const chamas = Array.from(storage.chamas).map(([_, chama]) => chama);
-      res.json(chamas);
+      // In a real app, we'd use pagination
+      const allChamas = await db.select().from(chamas);
+      res.json(allChamas);
     } catch (error) {
       res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  // API KEYS ROUTES
+  app.get("/api/admin/api-keys", requireAuth, verifyAppAdmin, async (req, res) => {
+    try {
+      const apiKeys = await storage.getApiKeys();
+      res.json(apiKeys);
+    } catch (error) {
+      res.status(500).json({ message: "Error fetching API keys", error: error.message });
+    }
+  });
+
+  app.post("/api/admin/api-keys", requireAuth, verifyAppAdmin, async (req, res) => {
+    try {
+      // Create a basic validation schema for the API key
+      const apiKeySchema = z.object({
+        name: z.string().min(3),
+        key: z.string().min(5),
+        type: z.string().min(3),
+        isActive: z.boolean().optional().default(true)
+      });
+      
+      const apiKeyData = apiKeySchema.parse(req.body);
+      const newApiKey = await storage.createApiKey(apiKeyData);
+      
+      res.status(201).json(newApiKey);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Validation error", errors: error.format() });
+      } else {
+        res.status(500).json({ message: "Error creating API key", error: error.message });
+      }
+    }
+  });
+
+  app.put("/api/admin/api-keys/:id", requireAuth, verifyAppAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid API key ID" });
+      }
+
+      // Create a basic validation schema for updating the API key
+      const updateApiKeySchema = z.object({
+        name: z.string().min(3).optional(),
+        key: z.string().min(5).optional(),
+        type: z.string().min(3).optional(),
+        isActive: z.boolean().optional()
+      });
+      
+      const apiKeyData = updateApiKeySchema.parse(req.body);
+      const updatedApiKey = await storage.updateApiKey(id, apiKeyData);
+      
+      if (!updatedApiKey) {
+        return res.status(404).json({ message: "API key not found" });
+      }
+      
+      res.json(updatedApiKey);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Validation error", errors: error.format() });
+      } else {
+        res.status(500).json({ message: "Error updating API key", error: error.message });
+      }
+    }
+  });
+
+  app.delete("/api/admin/api-keys/:id", requireAuth, verifyAppAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid API key ID" });
+      }
+      
+      const result = await storage.deleteApiKey(id);
+      
+      if (!result) {
+        return res.status(404).json({ message: "API key not found" });
+      }
+      
+      res.status(204).end();
+    } catch (error) {
+      res.status(500).json({ message: "Error deleting API key", error: error.message });
     }
   });
 

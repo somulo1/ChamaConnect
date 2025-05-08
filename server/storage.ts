@@ -5,13 +5,14 @@ import { pool } from './db';
 import { 
   users, wallets, chamas, chamaMembers, contributions, 
   transactions, meetings, messages, chamaRules,
-  notifications, products, learningProgress,
+  notifications, products, learningProgress, apiKeys,
   type User, type InsertUser, type Wallet, type InsertWallet,
   type Chama, type InsertChama, type ChamaMember, type InsertChamaMember,
   type Contribution, type InsertContribution, type Transaction, type InsertTransaction,
   type Meeting, type InsertMeeting, type Message, type InsertMessage,
   type ChamaRule, type InsertChamaRule, type Notification, type InsertNotification,
-  type Product, type InsertProduct, type LearningProgress
+  type Product, type InsertProduct, type LearningProgress, type InsertLearningProgress,
+  type ApiKey, type InsertApiKey
 } from '@shared/schema';
 import { eq, and, desc } from 'drizzle-orm';
 
