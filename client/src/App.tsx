@@ -18,9 +18,16 @@ import UserSettings from "@/pages/user/Settings";
 import ChamaDashboard from "@/pages/chama/Dashboard";
 import ChamaMembers from "@/pages/chama/Members";
 import ChamaContributions from "@/pages/chama/Contributions";
+import ChamaMeetings from "@/pages/chama/Meetings";
+import ChamaDocuments from "@/pages/chama/Documents";
+import ChamaSettings from "@/pages/chama/Settings";
 
 // Admin Dashboard Pages
 import AdminDashboard from "@/pages/admin/Dashboard";
+import AdminUsers from "@/pages/admin/Users";
+import AdminChamas from "@/pages/admin/Chamas";
+import AdminReports from "@/pages/admin/Reports";
+import AdminTransactions from "@/pages/admin/Transactions";
 import ApiSettings from "@/pages/admin/ApiSettings";
 
 function App() {
@@ -45,9 +52,16 @@ function App() {
         <Route path="/chama/:id" component={ChamaDashboard} />
         <Route path="/chama/:id/members" component={ChamaMembers} />
         <Route path="/chama/:id/contributions" component={ChamaContributions} />
+        <Route path="/chama/:id/meetings" component={ChamaMeetings} />
+        <Route path="/chama/:id/documents" component={ChamaDocuments} />
+        <Route path="/chama/:id/settings" component={ChamaSettings} />
         
         {/* Admin Routes */}
         <Route path="/admin" component={AdminDashboard} />
+        <Route path="/admin/users" component={AdminUsers} />
+        <Route path="/admin/chamas" component={AdminChamas} />
+        <Route path="/admin/reports" component={AdminReports} />
+        <Route path="/admin/transactions" component={AdminTransactions} />
         <Route path="/admin/api-settings" component={ApiSettings} />
         
         {/* Not Found */}
