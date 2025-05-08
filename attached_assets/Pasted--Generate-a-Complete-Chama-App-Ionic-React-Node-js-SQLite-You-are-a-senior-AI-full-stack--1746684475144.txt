@@ -1,0 +1,375 @@
+
+Generate a Complete Chama App (Ionic React + Node.js + SQLite)
+
+    You are a senior AI full-stack developer tasked with building a secure, feature-rich, and highly user-friendly chama (group savings and investment) platform. The system must support users from different geographical locations to collaborate in real-time through meetings, chat, contributions, eCommerce, and learning tools. Build the frontend using Ionic React, backend using Node.js + Express, and database using SQLite. Ensure the system runs on web, Android, and iOS using Capacitor in a monorepo setup.
+
+🧱 MONOREPO PROJECT STRUCTURE
+
+Organize the app in a single monorepo with these root directories:
+
+🔐 USER TYPES & ROLE SYSTEM
+
+    Normal User
+
+    Chama Member with one or more of the following elected roles:
+
+        Chairperson
+
+        Treasurer (+ Assistant)
+
+        Secretary (+ Assistant)
+
+        Regular Member
+
+    Super Admin (App Owner, manages platform-wide functions)
+
+Each user can belong to multiple chamas with different roles.
+📱 FRONTEND: IONIC REACT FEATURES
+
+Build 3 distinct dashboards in the frontend, each with specific UI/UX, routing, and role-based visibility:
+1. 🧍 USER DASHBOARD
+
+Accessible to all users:
+
+    🧠 AI Assistant: Personalized financial advice, chama FAQs, investment tips
+
+    🎓 Financial Learning Hub: Videos, quizzes, courses
+
+    👛 Personal Wallet: Add funds, send/receive money, transaction logs
+
+    🛒 Marketplace Access: Browse products, buy/sell, manage listings, add to cart checkout and track deliveries.
+
+    🔔 Notifications Center: In-app + push (from contributions, chats, purchases)
+
+    💬 Private & Group Chat: 1:1 messaging and chama-based discussions
+
+    📈 Contribution History: View contributions across all chamas as long as you are a member and all are sorted nicely
+
+    🔐 Profile & Privacy Settings: signup , login, 2FA, activity log
+
+2. 🏦 CHAMA DASHBOARD
+
+Visible only to chama members:
+
+    🏛️ Chama Management:
+
+        Create, join, or leave chama, define chama
+
+        View members, roles, and activities
+
+    📊 Financial Overview:
+
+        Contributions, payouts, fines, savings, loans, merry go round, welfare contributions ,dividends, shares
+
+    🗳️ Election & Voting:
+
+        Custom polls
+
+        Role elections (secured by voting logic)
+
+    🛠️ Role-based Actions:
+
+        Chairperson: Set meetings, decisions, approve payments
+
+        Treasurer: Track funds, issue payments
+
+        Secretary: Manage documents, schedule events
+
+    🤝 Smart Contracts / Rules:
+
+        Define saving frequency, penalties, limits, merry go round, welfare contribution, share and dividends
+
+    📁 Document Management:
+
+        Share minutes, budgets, reports
+
+    🧾 Invoices & Receipts
+
+    📈 AI-Powered Financial Projections
+
+    🔔 Bulk Notifications (to members)
+
+3. 🛠️ SUPER ADMIN DASHBOARD
+
+Only for app/system owner:
+
+    👥 Manage All Users, Chamas, and Roles
+
+    📊 System Analytics
+
+    🌐 Whitelist / Block IPs or Devices
+
+    🚨 Security Alerts & Logs (Login attempts, IP tracking)
+
+    🧠 AI Console:
+
+        Tune assistant responses
+
+        Flag sensitive prompts
+
+    📦 Google Drive Backup Panel:
+
+        View all backups
+
+        Restore points
+
+    🔔 Platform-wide Notifications
+
+    💳 Global Payment Monitoring (Failed/Success Logs)
+
+🧠 AI FEATURES
+
+Integrated via backend and frontend:
+
+    Per-user assistant: Personalized assistant that helps with savings, chama rules, budgeting
+
+    Financial health checkups for chama groups
+
+    Admin AI tuning panel: Flag abusive usage, fine-tune prompts
+
+🔐 BACKEND (Node.js + Express) FEATURES
+
+All APIs must be modular and secure, with Swagger documentation.
+Core API Modules:
+
+    Auth API
+
+        Signup, login, password reset
+
+        Google OAuth (optional)
+
+        JWT or OAuth2-based authentication
+
+    User API
+
+        Wallet management
+
+        Profile updates
+
+        Learning content
+
+        Marketplace participation
+
+        Notification settings
+
+    Chama API
+
+        CRUD for chamas
+
+        Contribution tracking
+
+        Role assignments & elections
+
+        Attendance and meeting logs
+
+        AI financial reports
+
+    Marketplace API
+
+        Product CRUD
+
+        Cart management
+
+        Reviews & ratings
+
+        Order tracking
+
+    Chat API
+
+        1:1 and group messaging
+
+        Delivery receipts
+
+        Media attachments
+
+    Admin API
+
+        User & chama overview
+
+        System logs
+
+        IP & device management
+
+        Backup control
+
+        AI override
+
+    Payment API
+
+        M-Pesa STK Push + Callback Handling (via Daraja API)
+
+        Card/PayPal integration
+
+        USSD integration (e.g., Africa’s Talking)
+
+        Secure redirect to bank accounts (for Kenyan banks)
+
+    Backup API
+
+        Google Drive integration
+
+        Automatic scheduled backups
+
+        Restore endpoints
+
+    Notification API
+
+        Push (FCM), SMS (Twilio or Africa’s Talking), Email (SendGrid)
+
+🗃️ DATABASE: SQLite (with relational structure)
+
+Tables include (but not limited to):
+
+    users
+
+    wallets
+
+    transactions
+
+    chamas
+
+    chama_members
+
+    roles
+
+    contributions
+
+    votes
+
+    products
+
+    orders
+
+    messages
+
+    notifications
+
+    backups
+
+    admin_logs
+
+🔄 CROSS-PLATFORM REQUIREMENTS
+
+    Must build and run on web, Android, and iOS
+
+    Use Capacitor for native packaging
+
+    Biometric login (Face ID / fingerprint)
+
+    Push notifications via FCM
+
+    Offline-first (especially for chat and financial logs)
+
+✅ EXPECTED DELIVERABLES
+
+    🔧 Fully structured and functioning frontend (Ionic React)
+
+    🧩 Modular, production-ready backend (Node.js + Express)
+
+    📂 SQLite database schema + seed data
+
+    🔌 All third-party integrations (M-Pesa, Google Drive, FCM, Twilio)
+
+    📱 Mobile-ready via Capacitor
+
+    📘 Complete API documentation
+
+    🧪 Test suite (unit + e2e)
+
+    🧠 Pretrained assistant for finance help
+
+
+use this file system for the frontend and include everything:
+apps/
+└── frontend/
+    ├── public/                              # Public assets
+    │   └── index.html
+    │
+    ├── src/
+    │   ├── main.tsx                         # App entry point
+    │   ├── App.tsx                          # App wrapper with routing
+    │   ├── theme/                           # Ionic custom themes
+    │   │   └── variables.css
+    │
+    │   ├── assets/                          # Images, icons, etc.
+    │   │   └── logo.png
+    │
+    │   ├── components/                      # Shared UI components
+    │   │   ├── Header.tsx
+    │   │   ├── Footer.tsx
+    │   │   ├── Sidebar.tsx
+    │   │   └── Notifications.tsx
+    │
+    │   ├── layouts/                         # Dashboard layouts
+    │   │   ├── UserLayout.tsx
+    │   │   ├── ChamaLayout.tsx
+    │   │   └── AdminLayout.tsx
+    │
+    │   ├── context/                         # Context providers
+    │   │   ├── AuthContext.tsx
+    │   │   ├── ChamaContext.tsx
+    │   │   └── NotificationContext.tsx
+    │
+    │   ├── services/                        # API services
+    │   │   ├── authService.ts
+    │   │   ├── chamaService.ts
+    │   │   ├── paymentService.ts
+    │   │   ├── notificationService.ts
+    │   │   └── driveService.ts
+    │
+    │   ├── routes/                          # Route configs
+    │   │   ├── UserRoutes.tsx
+    │   │   ├── ChamaRoutes.tsx
+    │   │   └── AdminRoutes.tsx
+    │
+    │   ├── utils/                           # Helper functions
+    │   │   ├── formatDate.ts
+    │   │   ├── currency.ts
+    │   │   └── permissions.ts
+    │
+    │   ├── pages/
+    │   │
+    │   │   ├── user/                        # USER DASHBOARD PAGES
+    │   │   │   ├── Dashboard.tsx
+    │   │   │   ├── Learn.tsx
+    │   │   │   ├── Settings.tsx
+    │   │   │   ├── Notifications.tsx
+    │   │   │   └── Assistant.tsx           # AI assistant
+    │   │
+    │   │   ├── chama/                       # CHAMA DASHBOARD PAGES
+    │   │   │   ├── Dashboard.tsx
+    │   │   │   ├── Members.tsx
+    │   │   │   ├── Shares.tsx
+    │   │   │   ├── Contributions.tsx
+    │   │   │   ├── Loans.tsx
+    │   │   │   ├── Reports.tsx
+    │   │   │   ├── Assistant.tsx           # AI for analytics
+    │   │   │   └── Settings.tsx            # Role-based
+    │   │
+    │   │   ├── admin/                       # ADMIN DASHBOARD PAGES
+    │   │   │   ├── Dashboard.tsx
+    │   │   │   ├── ManageUsers.tsx
+    │   │   │   ├── ManageChamas.tsx
+    │   │   │   ├── AIConsole.tsx           # AI controls
+    │   │   │   ├── Backup.tsx              # Google Drive backup
+    │   │   │   ├── Security.tsx
+    │   │   │   └── Settings.tsx
+    │   │
+    │   │   └── auth/                        # Auth pages
+    │   │       ├── Login.tsx
+    │   │       ├── Register.tsx
+    │   │       └── ForgotPassword.tsx
+    │
+    │   ├── types/                           # TypeScript types
+    │   │   ├── user.ts
+    │   │   ├── chama.ts
+    │   │   └── payment.ts
+    │
+    │   └── i18n/                            # Localization
+    │       ├── en.json
+    │       └── sw.json
+    │
+    ├── capacitor.config.ts                 # Capacitor config for mobile
+    ├── vite.config.ts                      # Vite build config
+    ├── package.json
+    └── README.md
