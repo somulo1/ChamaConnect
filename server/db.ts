@@ -1,5 +1,8 @@
-import { Pool, neonConfig } from '@neondatabase/serverless';
-import { drizzle } from 'drizzle-orm/neon-serverless';
+import dotenv from 'dotenv';
+dotenv.config();
+
+import { Pool, neonConfig } from '@neondatabase/serverless'; // Ensure this is correct for your database
+import { drizzle } from 'drizzle-orm/neon-serverless'; // Ensure this is correct for your database
 import ws from 'ws';
 import * as schema from '@shared/schema';
 
