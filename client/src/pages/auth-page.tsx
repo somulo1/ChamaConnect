@@ -4,7 +4,6 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { insertUserSchema } from "@shared/schema";
-import { useAuth } from "@/hooks/use-auth";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +11,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Loader2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 
 // Login schema
 const loginSchema = z.object({
@@ -64,15 +65,79 @@ export default function AuthPage() {
     },
   });
 
-  const onLoginSubmit = (data: LoginFormValues) => {
-    loginMutation.mutate({
-      email: data.email,
-      password: data.password,
-    });
+  // Handle URL parameters for tab selection
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get('tab');
+    if (tab === 'register') {
+      setActiveTab('register');
+    }
+  }, []);
+  
+  const { toast } = useToast();
+
+  const onLoginSubmit = async (data: LoginFormValues) => {
+    try {
+      setIsLoggingIn(true);
+      setError(null);
+      
+      const response = await apiRequest("POST", "/api/login", {
+        email: data.email,
+        password: data.password
+      });
+      
+      const user = await response.json();
+      
+      toast({
+        title: "Login successful",
+        description: `Welcome back, ${user.fullName || user.username}!`,
+      });
+      
+      navigate("/");
+    } catch (err: any) {
+      setError(err.message || "Failed to login. Please check your credentials.");
+      toast({
+        title: "Login failed",
+        description: err.message || "Failed to login. Please check your credentials.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoggingIn(false);
+    }
   };
 
-  const onRegisterSubmit = (data: RegisterFormValues) => {
-    registerMutation.mutate(data);
+  const onRegisterSubmit = async (data: RegisterFormValues) => {
+    try {
+      setIsRegistering(true);
+      setError(null);
+      
+      const response = await apiRequest("POST", "/api/register", {
+        username: data.username,
+        email: data.email,
+        password: data.password,
+        fullName: data.fullName,
+        phoneNumber: data.phoneNumber,
+        role: data.role
+      });
+      
+      const user = await response.json();
+      
+      toast({
+        title: "Registration successful",
+        description: `Welcome, ${user.fullName || user.username}! Your account has been created.`,
+      });
+      
+      navigate("/");
+    } catch (err: any) {
+      setError(err.message || "Failed to register. Please try again.");
+      toast({
+        title: "Registration failed",
+        description: err.message || "Failed to register. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRegistering(false);
+    }
   };
 
   return (
